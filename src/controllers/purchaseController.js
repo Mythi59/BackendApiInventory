@@ -29,65 +29,72 @@ export async function purchaseProducts(request, response) {
           .json({ message: `Product with ID ${item.productId} not found` });
       }
 
-      if (product.stock < item.quiantity) {
+      if (product.quantity < item.quantity) {
         await transaction.rollback();
         return response.status(400).json({
-          message: `Insufficient stock for product ID ${item.productId}`,
+          message: `Insufficient stock for product "${product.name}". Available: ${product.quantity}`,
         });
       }
 
-      const itemTotal = product.price * item.quiantity;
+      const itemTotal = parseFloat(product.price) * item.quantity;
       totalAmount += itemTotal;
 
       detailPurchases.push({
         productId: item.productId,
-        quiantity: item.quiantity,
+        quantity: item.quantity,
         price: product.price,
         subtotal: itemTotal,
       });
 
+      // Actualizar stock
       await product.update(
         {
-          quiantity: product.stock - item.quiantity,
+          quantity: product.quantity - item.quantity,
         },
         { transaction }
       );
-
-      const purchase = await Purchase.create(
-        {
-          userId: userId,
-          totalAmount: totalAmount,
-        },
-        { transaction }
-      );
-
-      for (const detail of detailPurchases) {
-        await DetailsPurchase.create(
-          {
-            purchaseId: purchase.id,
-            ...detail,
-          },
-          { transaction }
-        );
-      }
-
-      await transaction.commit();
-
-      const completePurchase = await Purchase.findByPk(purchase.id, {
-        include: [
-          {
-            model: DetailsPurchase,
-            as: "details",
-            include: [{ model: Product, as: "product" }],
-          },
-        ],
-      });
-
-      response.status(201).json({
-        message: "Purchase completed successfully",
-        purchase: completePurchase,
-      });
     }
+
+    // Crear la compra
+    const purchase = await Purchase.create(
+      {
+        userId: userId,
+        totalAmount: totalAmount,
+      },
+      { transaction }
+    );
+
+    // Crear los detalles
+    for (const detail of detailPurchases) {
+      await DetailsPurchase.create(
+        {
+          purchaseId: purchase.id,
+          productId: detail.productId,
+          quantity: detail.quantity,
+          price: detail.price,
+          subtotal: detail.subtotal,
+        },
+        { transaction }
+      );
+    }
+
+    await transaction.commit();
+
+    // Obtener la compra completa
+    const completePurchase = await Purchase.findByPk(purchase.id, {
+      include: [
+        {
+          model: DetailsPurchase,
+          as: "details",
+          include: [{ model: Product, as: "product" }],
+        },
+      ],
+    });
+
+    response.status(201).json({
+      message: "Purchase completed successfully",
+      purchase: completePurchase,
+    });
   } catch (error) {
     await transaction.rollback();
     console.error("Error processing purchase:", error);
@@ -99,7 +106,8 @@ export async function purchaseProducts(request, response) {
 
 export async function getPurchaseHistory(request, response) {
   try {
-    const userId = request.user.id;
+    const { userId } = request.body.user;
+
     const purchases = await Purchase.findAll({
       where: { userId },
       include: [
@@ -127,11 +135,16 @@ export async function getPurchaseHistory(request, response) {
 export async function getInvoice(request, response) {
   try {
     const purchaseId = request.params.id;
-    const userId = request.user.id;
+    const { userId } = request.body.user;
 
     const purchase = await Purchase.findOne({
       where: { id: purchaseId, userId: userId },
       include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name", "email"],
+        },
         {
           model: DetailsPurchase,
           as: "details",

@@ -1,3 +1,4 @@
+// src/models/purchaseModel.js
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../database/connectionDB.js";
 
@@ -18,7 +19,7 @@ Purchase.init(
     },
     totalAmount: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
     status: {
-      type: DataTypes.ENUM("pending", "completed", "candeled"),
+      type: DataTypes.ENUM("pending", "completed", "canceled"),
       defaultValue: "completed",
     },
   },
@@ -29,17 +30,3 @@ Purchase.init(
     tableName: "purchases",
   }
 );
-
-Purchase.associations = (models) => {
-  Purchase.belongsTo(models.User, {
-    foreignKey: "userId",
-    as: "user",
-  });
-
-  Purchase.hasMany(models.PurchaseItem, {
-    foreignKey: "purchaseId",
-    as: "details",
-  });
-
-  return Purchase;
-};

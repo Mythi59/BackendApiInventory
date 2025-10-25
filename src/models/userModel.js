@@ -1,3 +1,4 @@
+// src/models/userModel.js
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../database/connectionDB.js";
 

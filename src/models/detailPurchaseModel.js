@@ -1,3 +1,4 @@
+// src/models/detailPurchaseModel.js
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../database/connectionDB.js";
 
@@ -22,8 +23,7 @@ DetailsPurchase.init(
         key: "id",
       },
     },
-
-    quiantity: {
+    quantity: {
       type: DataTypes.INTEGER,
       allowNull: false,
       validate: { min: 1 },
@@ -38,17 +38,3 @@ DetailsPurchase.init(
     tableName: "detailsPurchases",
   }
 );
-
-DetailsPurchase.associations = (models) => {
-  DetailsPurchase.belongsTo(models.Purchase, {
-    foreignKey: "purchaseId",
-    as: "purchase",
-  });
-
-  DetailsPurchase.belongsTo(models.Product, {
-    foreignKey: "productId",
-    as: "product",
-  });
-
-  return DetailsPurchase;
-};
