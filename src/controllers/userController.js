@@ -115,7 +115,7 @@ export async function getUserById(request, response) {
  * @apiSuccessExample Success-Response:
  *    HTTP/1.1 200 OK
  *    {
- *      "message": "User updated successfully"
+ *      "message": "User updated successfully."
  *    }
  */
 
